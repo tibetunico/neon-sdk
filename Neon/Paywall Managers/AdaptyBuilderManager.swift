@@ -48,8 +48,6 @@ public class AdaptyBuilderManager : NSObject, AdaptyPaywallControllerDelegate{
                     return
                 }
                 
-                NeonAppTracking.trackPaywallView()
-                
                 let visualPaywall = try! AdaptyUI.paywallController(with: adaptyBuilderPaywall.configuration, delegate: self)
                 controller.present(visualPaywall, animated: true)
                 
@@ -57,6 +55,44 @@ public class AdaptyBuilderManager : NSObject, AdaptyPaywallControllerDelegate{
         }
         
     }
+    
+    func present(
+        placementId: String,
+        from controller: UIViewController,
+        purchased: @escaping (_ product: AdaptyPaywallProduct?) -> (),
+        dismissed: @escaping () -> (),
+        restored: @escaping () -> (),
+        failedToPresent: @escaping () -> ()
+    ) {
+        self.purchased = purchased
+        self.dismissed = dismissed
+        self.restored = restored
+
+        Task {
+            do {
+                let paywall = try await Adapty.getPaywall(placementId: placementId, locale: nil, fetchPolicy: .reloadRevalidatingCacheData, loadTimeout: nil)
+                
+                guard paywall.hasViewConfiguration else {
+                    print("This paywall does not contain viewConfiguration")
+                    failedToPresent()
+                    return
+                }
+
+                // Konfigürasyon çek
+                let config = try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
+
+                let visualPaywall = try AdaptyUI.paywallController(with: config, delegate: self)
+
+                await MainActor.run {
+                    controller.present(visualPaywall, animated: true)
+                }
+            } catch {
+                print("Failed to load paywall: \(error)")
+                failedToPresent()
+            }
+        }
+    }
+
     
     
 }
