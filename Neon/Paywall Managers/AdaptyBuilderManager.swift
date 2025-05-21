@@ -57,7 +57,7 @@ public class AdaptyBuilderManager : NSObject, AdaptyPaywallControllerDelegate{
     }
     
     @available(iOS 15.0, *)
-    public func present(
+    public func presentUncache(
         placementId: String,
         from controller: UIViewController,
         purchased: @escaping (_ product: AdaptyPaywallProduct?) -> (),
