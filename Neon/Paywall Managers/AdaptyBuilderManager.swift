@@ -56,6 +56,7 @@ public class AdaptyBuilderManager : NSObject, AdaptyPaywallControllerDelegate{
         
     }
     
+    @available(iOS 15.0, *)
     func present(
         placementId: String,
         from controller: UIViewController,
