@@ -6,53 +6,64 @@
 //
 
 import Foundation
+import FirebaseAuth
 
 public class NeonEachLabsManager {
     
-    public static func startTask(apiKey: String, flowId: String, parameters: [String: Any], webhookURL: String? = nil, completion: @escaping (String?) -> Void) {
-        var wrappedParameters: [String: Any] = ["parameters": parameters]
-        
-        if let webhookURL = webhookURL {
-            wrappedParameters["webhook_url"] = webhookURL
-            print("✅ Webhook URL added: \(webhookURL)")
-        } else {
-            print("❌ No webhook URL provided")
-        }
-        
-        print("📤 Final wrappedParameters: \(wrappedParameters)")
-        
-        let endpoint = NeonEachLabsEndpoint.startTask(flowId: flowId, parameters: wrappedParameters, apiKey: apiKey)
-        
-        sendRequest(endpoint: endpoint) { json in
-            print("📥 API Response: \(json ?? [:])")
-            guard let json = json else {
-                completion(nil)
-                return
-            }
-            let triggerId = self.parseTriggerId(from: json)
-            print("🆔 Parsed triggerId: \(triggerId ?? "nil")")
-            completion(triggerId)
-        }
-    }
-    
-    public static func startBulkTask(apiKey: String, flowId: String, parameters: [String: Any],count: Int = 0, completion: @escaping ([String]?) -> Void) {
-        var wrappedParameters: [String: Any] = [
-                    "parameters": parameters,
-                    "count": count,
-                ]
-        
-        let bulkEndpoint = NeonEachLabsEndpoint.startBulkTask(flowId: flowId, parameters: wrappedParameters, apiKey: apiKey)
-        /*NeonEachLabsEndpoint.startTask(flowId: flowId, parameters: wrappedParameters, apiKey: apiKey)*/
-        
-        sendRequest(endpoint: bulkEndpoint) { jsons in
-            guard let json = jsons else {
-                completion(nil)
-                return
-            }
-            let triggerIds = self.parseBulkTriggerIDs(from: json)
-            completion(triggerIds)
-        }
-    }
+    private static func getWebhookURL() -> String? {
+         guard let firebaseUID = Auth.auth().currentUser?.uid else {
+             print("❌ Firebase user not found for webhook")
+             return nil
+         }
+         
+         let baseURL = "https://us-central1-unico-studio---ai-headshots.cloudfunctions.net/videoWebhook"
+         return "\(baseURL)?firebase_uid=\(firebaseUID)"
+     }
+     
+     public static func startTask(apiKey: String, flowId: String, parameters: [String: Any], completion: @escaping (String?) -> Void) {
+         var wrappedParameters: [String: Any] = ["parameters": parameters]
+         
+         if let webhookURL = getWebhookURL() {
+             wrappedParameters["webhook_url"] = webhookURL
+             print("✅ Auto-added webhook URL: \(webhookURL)")
+         } else {
+             print("⚠️ Could not generate webhook URL - user not authenticated")
+         }
+         
+         let endpoint = NeonEachLabsEndpoint.startTask(flowId: flowId, parameters: wrappedParameters, apiKey: apiKey)
+         
+         sendRequest(endpoint: endpoint) { json in
+             guard let json = json else {
+                 completion(nil)
+                 return
+             }
+             let triggerId = self.parseTriggerId(from: json)
+             completion(triggerId)
+         }
+     }
+     
+     public static func startBulkTask(apiKey: String, flowId: String, parameters: [String: Any], count: Int = 0, completion: @escaping ([String]?) -> Void) {
+         var wrappedParameters: [String: Any] = [
+             "parameters": parameters,
+             "count": count,
+         ]
+         
+         if let webhookURL = getWebhookURL() {
+             wrappedParameters["webhook_url"] = webhookURL
+             print("✅ Auto-added webhook URL to bulk task: \(webhookURL)")
+         }
+         
+         let bulkEndpoint = NeonEachLabsEndpoint.startBulkTask(flowId: flowId, parameters: wrappedParameters, apiKey: apiKey)
+         
+         sendRequest(endpoint: bulkEndpoint) { jsons in
+             guard let json = jsons else {
+                 completion(nil)
+                 return
+             }
+             let triggerIds = self.parseBulkTriggerIDs(from: json)
+             completion(triggerIds)
+         }
+     }
     
     public static func getStatus(apiKey: String, flowId: String, triggerId: String, completion: @escaping ([String:Any]?) -> Void) {
         let endpoint = NeonEachLabsEndpoint.getStatus(flowId: flowId, triggerId: triggerId, apiKey: apiKey)
