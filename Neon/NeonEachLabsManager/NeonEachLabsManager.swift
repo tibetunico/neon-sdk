@@ -14,16 +14,23 @@ public class NeonEachLabsManager {
         
         if let webhookURL = webhookURL {
             wrappedParameters["webhook_url"] = webhookURL
+            print("✅ Webhook URL added: \(webhookURL)")
+        } else {
+            print("❌ No webhook URL provided")
         }
+        
+        print("📤 Final wrappedParameters: \(wrappedParameters)")
         
         let endpoint = NeonEachLabsEndpoint.startTask(flowId: flowId, parameters: wrappedParameters, apiKey: apiKey)
         
         sendRequest(endpoint: endpoint) { json in
+            print("📥 API Response: \(json ?? [:])")
             guard let json = json else {
                 completion(nil)
                 return
             }
             let triggerId = self.parseTriggerId(from: json)
+            print("🆔 Parsed triggerId: \(triggerId ?? "nil")")
             completion(triggerId)
         }
     }
@@ -57,7 +64,40 @@ public class NeonEachLabsManager {
     private static func sendRequest(endpoint: NeonEachLabsEndpoint, completion: @escaping ([String : Any]?) -> Void) {
         let request = endpoint.request()
         
+        print("🚀 === OUTGOING REQUEST DEBUG ===")
+        print("URL: \(request.url?.absoluteString ?? "nil")")
+        print("Method: \(request.httpMethod ?? "nil")")
+        print("Headers: \(request.allHTTPHeaderFields ?? [:])")
+        
+        if let httpBody = request.httpBody {
+            if let bodyString = String(data: httpBody, encoding: .utf8) {
+                print("Body JSON: \(bodyString)")
+            } else {
+                print("Body: (unable to convert to string)")
+            }
+        } else {
+            print("Body: nil")
+        }
+        print("================================")
+        
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            print("📥 === API RESPONSE DEBUG ===")
+            
+            if let error = error {
+                print("❌ Network Error: \(error.localizedDescription)")
+            }
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                print("📊 Status Code: \(httpResponse.statusCode)")
+            }
+            
+            if let data = data {
+                if let responseString = String(data: data, encoding: .utf8) {
+                    print("📄 Response Body: \(responseString)")
+                }
+            }
+            print("=============================")
+            
             guard error == nil,
                   let response = response as? HTTPURLResponse,
                   let data = data else {
@@ -66,12 +106,12 @@ public class NeonEachLabsManager {
             }
             
             let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
-            
             completion(json)
         }
         
         task.resume()
     }
+
     
     private static func parseTriggerId(from json: [String: Any]?) -> String? {
         return json?["trigger_id"] as? String
