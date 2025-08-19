@@ -50,7 +50,6 @@ let package = Package(
                 .product(name: "FirebaseFirestore", package: "Firebase", condition: .when(platforms: [.iOS])),
                 .product(name: "FirebaseAuth", package: "Firebase", condition: .when(platforms: [.iOS])),
                 .product(name: "FirebaseCrashlytics", package: "Firebase", condition: .when(platforms: [.iOS])),
-                .product(name: "FirebaseDynamicLinks", package: "Firebase", condition: .when(platforms: [.iOS])),
                 .product(name: "FirebaseMessaging", package: "Firebase", condition: .when(platforms: [.iOS]))
                 
             
