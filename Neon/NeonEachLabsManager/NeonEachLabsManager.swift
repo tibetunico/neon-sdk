@@ -21,8 +21,8 @@ public class NeonEachLabsManager {
      }
      
      public static func startTask(apiKey: String, flowId: String, parameters: [String: Any], completion: @escaping (String?) -> Void) {
-         var wrappedParameters: [String: Any] = ["parameters": parameters]
-         
+         var wrappedParameters: [String: Any] = ["inputs": parameters]
+
          if let webhookURL = getWebhookURL() {
              wrappedParameters["webhook_url"] = webhookURL
              print("✅ Auto-added webhook URL: \(webhookURL)")
@@ -44,7 +44,7 @@ public class NeonEachLabsManager {
      
      public static func startBulkTask(apiKey: String, flowId: String, parameters: [String: Any], count: Int = 0, completion: @escaping ([String]?) -> Void) {
          var wrappedParameters: [String: Any] = [
-             "parameters": parameters,
+             "inputs": parameters,
              "count": count,
          ]
          
@@ -138,7 +138,7 @@ enum NeonEachLabsEndpoint {
     case getStatus(flowId: String, triggerId: String, apiKey: String)
     case startBulkTask(flowId: String, parameters: [String: Any], apiKey: String)
     var baseURL: String {
-        return "https://flows.eachlabs.ai/api/v1/"
+        return "https://workflows.eachlabs.run/api/v1/"
     }
     
     enum HTTPMethod: String {
